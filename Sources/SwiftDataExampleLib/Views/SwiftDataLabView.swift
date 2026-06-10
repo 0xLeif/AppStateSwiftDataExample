@@ -26,7 +26,6 @@ public struct SwiftDataLabView: View {
 
     @StateObject private var listStore = TodoListStore()
     @State private var newListTitle: String = ""
-    @State private var selectedList: TodoList?
     @State private var filterTagName: String = ""
 
     // MARK: Initialiser
@@ -36,21 +35,21 @@ public struct SwiftDataLabView: View {
     // MARK: Body
 
     public var body: some View {
-        NavigationSplitView {
-            sidebarContent
-        } detail: {
-            detailContent
-        }
-        .navigationTitle("SwiftData Lab")
+        listContent
+            .navigationTitle("SwiftData Lab")
     }
 
-    // MARK: - Sidebar
+    // MARK: - Lists
 
-    private var sidebarContent: some View {
-        List(selection: $selectedList) {
+    private var listContent: some View {
+        List {
             newListInputRow
             ForEach(listStore.lists, id: \.persistentModelID) { list in
-                NavigationLink(value: list) {
+                // A destination-based NavigationLink pushes onto the host catalog's NavigationStack
+                // directly — robust when this whole view is itself a pushed destination.
+                NavigationLink {
+                    TodoItemListView(list: list, filterTagName: $filterTagName)
+                } label: {
                     TodoListRowView(list: list)
                 }
             }
@@ -58,7 +57,6 @@ public struct SwiftDataLabView: View {
                 offsets.map { listStore.lists[$0] }.forEach { listStore.delete($0) }
             }
         }
-        .navigationTitle("Lists")
     }
 
     private var newListInputRow: some View {
@@ -69,21 +67,6 @@ public struct SwiftDataLabView: View {
                 Image(systemName: "plus.circle.fill")
             }
             .disabled(newListTitle.trimmingCharacters(in: .whitespaces).isEmpty)
-        }
-    }
-
-    // MARK: - Detail
-
-    @ViewBuilder
-    private var detailContent: some View {
-        if let list = selectedList {
-            TodoItemListView(list: list, filterTagName: $filterTagName)
-        } else {
-            ContentUnavailableView(
-                "Select a List",
-                systemImage: "checklist",
-                description: Text("Choose a list from the sidebar or create a new one.")
-            )
         }
     }
 

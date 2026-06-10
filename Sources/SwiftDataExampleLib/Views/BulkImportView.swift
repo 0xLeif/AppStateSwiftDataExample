@@ -54,18 +54,16 @@ public struct BulkImportView: View {
     // MARK: - Body
 
     public var body: some View {
-        NavigationStack {
-            VStack(spacing: 24) {
-                statusHeader
-                progressSection
-                controlButtons
-                finalCountSection
-                Spacer()
-                interactivityDemoSection
-            }
-            .padding()
-            .navigationTitle("Bulk Import")
+        VStack(spacing: 24) {
+            statusHeader
+            progressSection
+            controlButtons
+            finalCountSection
+            Spacer()
+            interactivityDemoSection
         }
+        .padding()
+        .navigationTitle("Bulk Import")
     }
 
     // MARK: - Sub-views

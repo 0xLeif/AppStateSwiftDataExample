@@ -89,15 +89,11 @@ final class BulkImportViewTests: XCTestCase {
 
     // MARK: - Tests: View Hierarchy Structure
 
-    func testViewIsWrappedInNavigationStack() throws {
+    func testBodyRootsInVStack() throws {
         let sut = makeSUT()
-        // `BulkImportView.body` must root in a NavigationStack.
-        XCTAssertNoThrow(try sut.inspect().navigationStack())
-    }
-
-    func testVStackExistsInsideNavigationStack() throws {
-        let sut = makeSUT()
-        XCTAssertNoThrow(try sut.inspect().navigationStack().vStack())
+        // The view is presented inside the host catalog's NavigationStack, so its own body roots
+        // directly in a VStack (no nested navigation container).
+        XCTAssertNoThrow(try sut.inspect().vStack())
     }
 
     // MARK: - Tests: Progress Counter Text

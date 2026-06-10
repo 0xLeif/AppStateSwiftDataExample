@@ -81,12 +81,10 @@ public extension Application {
         return modelState(container: \.labContainer, fetchDescriptor: descriptor)
     }
 
-    /// High-priority `TodoItem`s (priority >= `threshold`) that are not yet done, ordered
-    /// by priority descending then by due date ascending (nils last via nil-coalescing in
-    /// the sort key workaround — SwiftData 1.0 does not yet support nil-first/nil-last
-    /// natively, so items without a due date are sorted to the end via a large sentinel).
+    /// High-priority `TodoItem`s (priority >= `threshold`) that are not yet done, ordered by
+    /// `priority` descending then by `createdAt` ascending, capped at `fetchLimit`.
     ///
-    /// Demonstrates a multi-key sort where one key is a computed expression.
+    /// Demonstrates a compound predicate combined with a multi-key sort.
     ///
     /// - Parameters:
     ///   - threshold: Minimum priority value (inclusive). Defaults to `1`.

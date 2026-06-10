@@ -157,27 +157,32 @@ final class BulkImporterTests: XCTestCase {
 
     // MARK: - Tests: Progress Callback
 
-    func testProgressCallbackIsInvoked() async {
+    func testProgressStreamsMoreOftenThanSaves() async {
+        // Progress is decoupled from saves: with a 25-item stride, 100 items stream ~4 updates,
+        // independent of the 20-item save batch.
         var callCount = 0
         let importer = makeImporter()
 
-        await importer.importItems(count: 100, batchSize: 20) { _ in
+        await importer.importItems(count: 100, batchSize: 20, progressStride: 25) { _ in
             await MainActor.run { callCount += 1 }
         }
 
-        // 100 items / 20 per batch = 5 batches → 5 progress callbacks.
-        XCTAssertEqual(callCount, 5)
+        XCTAssertEqual(callCount, 4, "Expected 100/25 streamed progress updates")
     }
 
     func testProgressCallbackValuesAreMonotonicallyIncreasing() async {
         var progressValues: [Int] = []
         let importer = makeImporter()
 
-        await importer.importItems(count: 60, batchSize: 20) { inserted in
+        await importer.importItems(count: 60, batchSize: 20, progressStride: 25) { inserted in
             await MainActor.run { progressValues.append(inserted) }
         }
 
-        XCTAssertEqual(progressValues, [20, 40, 60])
+        // Strictly increasing, and the last value reaches the total.
+        XCTAssertFalse(progressValues.isEmpty)
+        XCTAssertEqual(progressValues, progressValues.sorted())
+        XCTAssertEqual(Set(progressValues).count, progressValues.count, "No duplicate progress values")
+        XCTAssertEqual(progressValues.last, 60)
     }
 
     func testFinalProgressValueMatchesCount() async {
@@ -191,16 +196,17 @@ final class BulkImporterTests: XCTestCase {
         XCTAssertEqual(last, 50)
     }
 
-    func testProgressCallbackWithUnalignedBatch() async {
-        // 55 items, batchSize 20 → batches of [20, 20, 15] → progress [20, 40, 55].
+    func testProgressReachesCountOnUnalignedTotal() async {
+        // A total that is not a multiple of the stride still ends exactly on `count`.
         var progressValues: [Int] = []
         let importer = makeImporter()
 
-        await importer.importItems(count: 55, batchSize: 20) { inserted in
+        await importer.importItems(count: 55, batchSize: 20, progressStride: 25) { inserted in
             await MainActor.run { progressValues.append(inserted) }
         }
 
-        XCTAssertEqual(progressValues, [20, 40, 55])
+        XCTAssertEqual(progressValues, progressValues.sorted())
+        XCTAssertEqual(progressValues.last, 55)
     }
 
     func testProgressCallbackIsOptional() async {

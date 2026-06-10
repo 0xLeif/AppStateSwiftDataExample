@@ -42,52 +42,71 @@ public actor BulkImporter {
     /// }
     /// ```
     ///
+    /// Progress is **streamed**: `onProgress` fires every `progressStride` inserts (not just once per
+    /// save), so a progress bar advances smoothly instead of jumping by the save-batch size. Saves
+    /// stay batched (`batchSize`) for memory/throughput — reporting and persistence are decoupled.
+    ///
     /// - Parameters:
     ///   - count: Total number of `TodoItem`s to insert. Must be > 0.
     ///   - batchSize: Number of items to insert per save round-trip. Defaults to `500`.
-    ///   - listTitle: Title for the containing `TodoList`. Defaults to a timestamped name.
-    ///   - onProgress: Optional `@Sendable` async closure called after each batch with the
-    ///                 running inserted count. May be `nil` if progress tracking is not needed.
+    ///   - progressStride: How often, in items, to emit a progress update. Defaults to `25`.
+    ///   - listTitle: Title for the containing `TodoList`. Defaults to `"Bulk Import"`.
+    ///   - onProgress: Optional `@Sendable` async closure called with the running inserted count.
+    ///                 May be `nil` if progress tracking is not needed.
     public func importItems(
         count: Int,
         batchSize: Int = 500,
+        progressStride: Int = 25,
         listTitle: String = "Bulk Import",
         onProgress: (@Sendable (Int) async -> Void)? = nil
     ) async {
         guard count > 0 else { return }
 
         let effectiveBatchSize = max(1, batchSize)
+        let stride = max(1, progressStride)
 
         // Create the parent list entirely in the background context — never mainContext.
         let list = TodoList(title: listTitle)
         modelContext.insert(list)
 
         var inserted = 0
+        var sinceLastSave = 0
 
         while inserted < count {
             guard !Task.isCancelled else {
                 saveContext()
+                await onProgress?(inserted)
                 return
             }
 
-            let batchEnd = min(inserted + effectiveBatchSize, count)
+            let item = TodoItem(
+                title: "Bulk Item \(inserted + 1)",
+                priority: inserted % 6
+            )
+            list.items.append(item)
+            modelContext.insert(item)
+            inserted += 1
+            sinceLastSave += 1
 
-            for index in inserted ..< batchEnd {
-                let item = TodoItem(
-                    title: "Bulk Item \(index + 1)",
-                    priority: index % 6
-                )
-                list.items.append(item)
-                modelContext.insert(item)
+            // Persist in batches to keep memory pressure low…
+            if sinceLastSave >= effectiveBatchSize {
+                saveContext()
+                sinceLastSave = 0
             }
 
-            saveContext()
-            inserted = batchEnd
+            // …but stream progress far more often so the UI updates live.
+            if inserted % stride == 0 {
+                await onProgress?(inserted)
+                // Yield so the concurrency scheduler can service the UI between updates.
+                await Task.yield()
+            }
+        }
 
+        // Flush the final partial batch. Emit a terminal update only if the last in-loop report
+        // didn't already land exactly on `count` (avoids a duplicate final callback).
+        saveContext()
+        if inserted % stride != 0 {
             await onProgress?(inserted)
-
-            // Yield to the Swift concurrency scheduler so other tasks get CPU time.
-            await Task.yield()
         }
     }
 
