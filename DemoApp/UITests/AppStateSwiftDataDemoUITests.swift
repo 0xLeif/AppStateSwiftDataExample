@@ -111,4 +111,25 @@ final class AppStateSwiftDataDemoUITests: XCTestCase {
             "UI did not return to an interactive state"
         )
     }
+
+    // MARK: - Seed & Stress: large background seed, non-blocking
+
+    func testSeedLargeIsNonBlockingAndCompletes() {
+        openExample("Seed & Stress")
+        XCTAssertTrue(app.navigationBars["Seed & Stress"].waitForExistence(timeout: 8))
+
+        let large = app.buttons.containing(NSPredicate(format: "label BEGINSWITH 'Large'")).firstMatch
+        XCTAssertTrue(large.waitForExistence(timeout: 5))
+        large.tap()
+
+        // While 1,000 items seed on the background @ModelActor, Cancel is present and hittable —
+        // the main thread is not blocked.
+        let cancel = app.buttons["Cancel"]
+        XCTAssertTrue(cancel.waitForExistence(timeout: 5), "Seed did not start / UI was blocked")
+        XCTAssertTrue(cancel.isHittable, "Cancel not hittable — the UI is blocked")
+
+        // The seed completes and the controls re-enable.
+        XCTAssertTrue(cancel.waitForNonExistence(timeout: 60), "Seed did not finish")
+        XCTAssertTrue(large.isEnabled, "Controls did not re-enable after seeding")
+    }
 }

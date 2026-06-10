@@ -35,6 +35,12 @@ struct ExampleCatalogView: View {
     var body: some View {
         NavigationStack {
             List {
+                Section("Data") {
+                    row("Seed & Stress", "shippingbox.fill", "fill the store with a TON of related data, off-main") {
+                        SeederView()
+                    }
+                }
+
                 Section("Core") {
                     row("SwiftData Lab", "tablecells", "relationships, cascade, queries, migration") {
                         SwiftDataLabView()
@@ -69,6 +75,11 @@ struct ExampleCatalogView: View {
                 }
             }
             .navigationTitle("AppState · SwiftData")
+            .task {
+                // Populate the store on a fresh launch so every screen has data to show. The seed
+                // runs on a background @ModelActor and no-ops if the store is already populated.
+                await seedSampleDataIfEmpty()
+            }
         }
     }
 

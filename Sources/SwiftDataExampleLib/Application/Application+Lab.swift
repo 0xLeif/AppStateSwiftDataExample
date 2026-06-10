@@ -106,4 +106,27 @@ public extension Application {
 
 }
 
+// MARK: - First-launch auto-seed
+
+/// Seeds a modest sample of data into the shared store if it is currently empty.
+///
+/// Call this once at app launch (e.g. in `@main` or a scene's `.task` modifier) to populate
+/// the store with interesting data on a fresh install. If the store already contains items the
+/// function returns immediately without touching the store, so it is safe to call on every launch.
+///
+/// All insert work runs on a background `@ModelActor` — the main actor is never blocked.
+///
+/// ```swift
+/// .task { await seedSampleDataIfEmpty() }
+/// ```
+@MainActor
+public func seedSampleDataIfEmpty() async {
+    let existingCount = Application.modelState(\.allItems).models.count
+    guard existingCount == 0 else { return }
+
+    let container = Application.dependency(\.labContainer)
+    let seeder = DataSeeder(modelContainer: container)
+    await seeder.seed(itemCount: 150)
+}
+
 #endif
