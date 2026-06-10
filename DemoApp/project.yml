@@ -1,0 +1,63 @@
+name: AppStateSwiftDataDemo
+options:
+  bundleIdPrefix: com.corvidlabs
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "3.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    GENERATE_INFOPLIST_FILE: YES
+    INFOPLIST_KEY_UILaunchScreen_Generation: YES
+
+packages:
+  AppState:
+    url: https://github.com/0xLeif/AppState.git
+    branch: develop
+  SwiftDataExample:
+    path: ..
+
+targets:
+  AppStateSwiftDataDemo:
+    type: application
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - Sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.corvidlabs.AppStateSwiftDataDemo
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        TARGETED_DEVICE_FAMILY: "1,2"
+    dependencies:
+      - package: AppState
+        product: AppState
+      - package: SwiftDataExample
+        product: SwiftDataExampleLib
+
+  AppStateSwiftDataDemoUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - UITests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.corvidlabs.AppStateSwiftDataDemoUITests
+        TEST_TARGET_NAME: AppStateSwiftDataDemo
+        SWIFT_VERSION: "6.0"
+    dependencies:
+      - target: AppStateSwiftDataDemo
+
+schemes:
+  AppStateSwiftDataDemo:
+    build:
+      targets:
+        AppStateSwiftDataDemo: all
+        AppStateSwiftDataDemoUITests: [test]
+    test:
+      targets:
+        - AppStateSwiftDataDemoUITests

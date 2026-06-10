@@ -1,0 +1,10 @@
+.DS_Store
+.build/
+/Packages
+xcuserdata/
+DerivedData/
+.swiftpm/
+Package.resolved
+# xcodegen-generated demo project + derived data
+DemoApp/*.xcodeproj/
+DemoApp/.build-dd/
