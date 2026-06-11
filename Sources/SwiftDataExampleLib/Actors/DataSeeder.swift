@@ -224,18 +224,15 @@ public actor DataSeeder {
             dueDate: dueDate
         )
 
-        // Assign to a list (round-robin so every list gets roughly equal items).
-        let list = lists[index % lists.count]
-        list.items.append(item)
-        item.list = list
+        // Assign to a list (round-robin). Setting the to-one side is enough — SwiftData maintains the
+        // inverse `list.items` automatically. Appending to the to-many side as well is redundant and
+        // gets quadratic as the list grows, which is what made large seeds slow.
+        item.list = lists[index % lists.count]
 
-        // Attach 0–3 random tags.
+        // Attach 0–3 random tags in a single assignment (the inverse `Tag.items` is auto-maintained).
         if !tags.isEmpty {
             let tagCount = Int.random(in: 0 ... min(3, tags.count))
-            let selectedTags = tags.shuffled().prefix(tagCount)
-            for tag in selectedTags where !item.tags.contains(where: { $0.name == tag.name }) {
-                item.tags.append(tag)
-            }
+            item.tags = Array(tags.shuffled().prefix(tagCount))
         }
 
         return item

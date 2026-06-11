@@ -73,6 +73,12 @@ struct ExampleCatalogView: View {
                         UndoRedoView()
                     }
                 }
+
+                Section("Observability") {
+                    row("Headless Observer", "dot.radiowaves.left.and.right", "@Observable observed by a plain object — no SwiftUI") {
+                        HeadlessObserverView()
+                    }
+                }
             }
             .navigationTitle("AppState · SwiftData")
             .task {

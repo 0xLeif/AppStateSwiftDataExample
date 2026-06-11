@@ -74,21 +74,9 @@ public struct SeederView: View {
                 .foregroundStyle(.secondary)
 
             HStack(spacing: 0) {
-                SeedCountChip(
-                    label: "Lists",
-                    count: Application.modelState(\.todoLists).models.count,
-                    color: .blue
-                )
-                SeedCountChip(
-                    label: "Items",
-                    count: Application.modelState(\.allItems).models.count,
-                    color: .purple
-                )
-                SeedCountChip(
-                    label: "Tags",
-                    count: Application.modelState(\.allTags).models.count,
-                    color: .teal
-                )
+                SeedCountChip(label: "Lists", count: storeCount(TodoList.self), color: .blue)
+                SeedCountChip(label: "Items", count: storeCount(TodoItem.self), color: .purple)
+                SeedCountChip(label: "Tags", count: storeCount(Tag.self), color: .teal)
             }
             .padding(.vertical, 2)
         }
@@ -229,6 +217,16 @@ public struct SeederView: View {
                 isClearing = false
             }
         }
+    }
+
+    /// A cheap live store count via `fetchCount` (a SQL `COUNT(*)`).
+    ///
+    /// `ModelState.models.count` materializes *every* record before counting, which — because this
+    /// view re-renders on each streamed progress tick — made the counts O(n) per frame and dominated
+    /// large-seed time. `fetchCount` counts in the store without loading any objects.
+    private func storeCount<Model: PersistentModel>(_ type: Model.Type) -> Int {
+        let context = Application.dependency(\.labContainer).mainContext
+        return (try? context.fetchCount(FetchDescriptor<Model>())) ?? 0
     }
 }
 

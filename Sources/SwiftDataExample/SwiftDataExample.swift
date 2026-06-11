@@ -128,6 +128,46 @@ struct SwiftDataExample {
         precondition(lastProgress == 5_000, "Progress must reach 5,000")
         precondition(bulkCount == 5_000, "Main context must see all 5,000 inserted items")
 
+        // ── 9. HeadlessObserver: proving @Observable works without SwiftUI ───────────────────
+        print("\n9. HeadlessObserver: observing AppState from a plain Swift object (no SwiftUI)…")
+
+        // Reset the counter so the demo starts from zero regardless of prior state.
+        Application.reset(\.observedCounter)
+        var reactionLog = Application.state(\.observerReactionLog)
+        reactionLog.value = []
+
+        let headlessObserver = HeadlessObserver()
+        headlessObserver.start()
+        print("   Observer started (isRunning: \(headlessObserver.isRunning))")
+
+        // Perform three mutations via the imperative Application.state accessor.
+        // Each write bumps Application.changeAnchor, which the observer's
+        // withObservationTracking scope has subscribed to.
+        for value in [1, 2, 3] {
+            var counter = Application.state(\.observedCounter)
+            counter.value = value
+
+            // Yield briefly so the Task { @MainActor in … } dispatched by HeadlessObserver
+            // can execute before the next mutation.
+            let deadline = Date(timeIntervalSinceNow: 0.1)
+            while Date() < deadline {
+                await Task.yield()
+            }
+        }
+
+        let reactionCount = headlessObserver.reactionCount
+        let lastValue = headlessObserver.lastObservedValue ?? -1
+        let logEntries = Application.state(\.observerReactionLog).value
+
+        print("   HeadlessObserver reacted \(reactionCount) time(s) — last seen value: \(lastValue)")
+        print("   Reaction log entries: \(logEntries.count)")
+        for entry in logEntries {
+            print("     \(entry)")
+        }
+        precondition(reactionCount == 3, "Expected 3 reactions, got \(reactionCount)")
+        precondition(lastValue == 3, "Expected last value 3, got \(lastValue)")
+        print("   [PASSED] HeadlessObserver observed all 3 mutations without any SwiftUI view")
+
         print("\n== Example completed successfully ==")
         exit(0)
     }
