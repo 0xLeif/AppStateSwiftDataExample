@@ -18,9 +18,9 @@ let package = Package(
         ),
     ],
     dependencies: [
-        // Tracks the AppState `develop` branch until 3.0.0 (which ships the SwiftData support this
-        // example demonstrates) is released — then switch to `from: "3.0.0"`.
-        .package(url: "https://github.com/0xLeif/AppState.git", branch: "develop"),
+        // Pinned to the 3.0.0 release candidate that ships the SwiftData support this example
+        // demonstrates. Bump to `from: "3.0.0"` once the final tag lands.
+        .package(url: "https://github.com/0xLeif/AppState.git", exact: "3.0.0-rc.1"),
         .package(url: "https://github.com/nalexn/ViewInspector", from: "0.10.0"),
     ],
     targets: [
