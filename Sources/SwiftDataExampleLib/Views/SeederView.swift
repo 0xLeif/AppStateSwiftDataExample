@@ -177,10 +177,15 @@ public struct SeederView: View {
         let container = Application.dependency(\.labContainer)
         let count = size.itemCount
 
+        // Scale the cadence with the dataset: ~100 progress updates total (smooth bar, far fewer
+        // re-renders/main-actor hops) and larger save batches for big seeds.
+        let stride = max(25, count / 100)
+        let batchSize = count >= 10_000 ? 2_000 : 500
+
         seedTask = Task {
             let seeder = DataSeeder(modelContainer: container)
 
-            await seeder.seed(itemCount: count) { inserted in
+            await seeder.seed(itemCount: count, batchSize: batchSize, progressStride: stride) { inserted in
                 let clamped = min(inserted, count)
                 await MainActor.run {
                     progressCount = clamped

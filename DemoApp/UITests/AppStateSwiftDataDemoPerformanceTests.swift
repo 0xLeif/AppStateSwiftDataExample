@@ -36,22 +36,40 @@ final class AppStateSwiftDataDemoPerformanceTests: XCTestCase {
         _ = app.staticTexts["AppState · SwiftData"].waitForExistence(timeout: 5)
     }
 
-    /// Measures the wall-clock time to push a screen and render its nav bar (ms precision).
+    /// Scrolls a row into view (untimed) so subsequent taps measure pure tap→render, not scrolling.
+    private func ensureVisible(_ app: XCUIApplication, _ row: XCUIElement) {
+        var swipes = 0
+        while !row.exists && swipes < 8 {
+            app.swipeUp()
+            swipes += 1
+        }
+        while row.exists && !row.isHittable && swipes < 12 {
+            app.swipeUp()
+            swipes += 1
+        }
+    }
+
+    /// Measures the pure wall-clock time from tapping an *already-visible* row to its screen
+    /// rendering (ms). Scrolling is done untimed, so this isolates the navigation + render cost.
     private func measureOpen(_ titlePrefix: String, navBar: String) {
         let app = XCUIApplication()
         app.launch()
         // Let the launch auto-seed settle so timings reflect a populated store.
         _ = app.staticTexts["AppState · SwiftData"].waitForExistence(timeout: 10)
 
-        // Auto-start at block entry; manually stop the clock the instant the screen renders, so the
-        // (untimed) back-navigation is excluded from the measurement.
+        let row = app.buttons.containing(NSPredicate(format: "label BEGINSWITH %@", titlePrefix)).firstMatch
+        ensureVisible(app, row)
+
+        // Auto-start at block entry; manually stop the clock the instant the screen renders. The tap
+        // target is already on-screen, and the back-navigation + re-scroll happen after stopMeasuring.
         let options = XCTMeasureOptions()
         options.invocationOptions = [.manuallyStop]
         measure(metrics: [XCTClockMetric()], options: options) {
-            openRow(app, titlePrefix)
+            row.tap()
             XCTAssertTrue(app.navigationBars[navBar].waitForExistence(timeout: 15), "\(navBar) did not render")
             stopMeasuring()
             goToCatalog(app)
+            ensureVisible(app, row)
         }
     }
 
