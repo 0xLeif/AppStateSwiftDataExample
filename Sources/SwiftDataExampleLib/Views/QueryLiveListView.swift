@@ -7,45 +7,19 @@ import SwiftUI
 
 // MARK: - QueryLiveListView
 
-/// A self-contained screen demonstrating native SwiftData `@Query` as a reactive
-/// contrast to AppState's `@ModelState`.
-///
-/// `@Query` binds directly to the `ModelContainer` injected by the host app via
-/// `.modelContainer(...)`, and re-renders the list automatically whenever the
-/// persistent store changes — without any manual observation or store object.
-/// `@ModelState` provides the same reactivity through AppState's dependency system,
-/// letting you control the container via `Application.override` in tests.
-///
-/// ### Integration
-/// Present this view inside the host app's `NavigationStack`; it sets its own
-/// `.navigationTitle` and needs no outer navigation container.
+/// Native `@Query` reactive list — contrasts with `@ModelState` (same reactivity, swappable container).
 ///
 /// ```swift
-/// // In the host app's tab or navigation destination:
 /// QueryLiveListView()
 /// ```
 public struct QueryLiveListView: View {
 
     // MARK: - Properties
 
-    /// Live, auto-updating list of all `TodoItem`s sorted by title.
-    ///
-    /// SwiftData re-fetches and re-renders this whenever the underlying store changes,
-    /// including inserts made via `@Environment(\.modelContext)` in this same view.
-    @Query(sort: \TodoItem.title)
-    private var items: [TodoItem]
-
-    /// The context provided by the host app's `.modelContainer(...)` environment modifier.
-    ///
-    /// Used to insert and delete `TodoItem`s without routing through AppState.
+    @Query(sort: \TodoItem.title) private var items: [TodoItem]
     @Environment(\.modelContext) private var context
-
-    /// The current value of the new-item text field.
     @State private var newItemTitle: String = ""
 
-    // MARK: - Initialiser
-
-    /// Creates a `QueryLiveListView`.
     public init() {}
 
     // MARK: - Body
@@ -61,14 +35,12 @@ public struct QueryLiveListView: View {
 
     // MARK: - Sections
 
-    /// A caption explaining the `@Query` vs `@ModelState` contrast.
     private var queryExplanationSection: some View {
         Section {
             QueryLiveCaptionView()
         }
     }
 
-    /// A text field and Add button that insert a `TodoItem` directly via `modelContext`.
     private var addItemSection: some View {
         Section("Add Item") {
             HStack {
@@ -82,7 +54,6 @@ public struct QueryLiveListView: View {
         }
     }
 
-    /// The reactive list of `TodoItem` rows, populated directly from `@Query`.
     private var liveItemsSection: some View {
         Section("Items (\(items.count))") {
             if items.isEmpty {
@@ -100,10 +71,6 @@ public struct QueryLiveListView: View {
 
     // MARK: - Actions
 
-    /// Inserts a `TodoItem` into the host-provided `modelContext` and saves.
-    ///
-    /// The `@Query` above picks up the new record automatically — no manual
-    /// refresh or AppState call needed.
     @MainActor
     private func commitNewItem() {
         let trimmed = newItemTitle.trimmingCharacters(in: .whitespaces)
@@ -114,9 +81,6 @@ public struct QueryLiveListView: View {
         newItemTitle = ""
     }
 
-    /// Removes items at the given offsets from the `modelContext` and saves.
-    ///
-    /// - Parameter offsets: The index set identifying which rows to delete.
     @MainActor
     private func deleteItems(at offsets: IndexSet) {
         for index in offsets {
@@ -128,9 +92,7 @@ public struct QueryLiveListView: View {
 
 // MARK: - QueryLiveCaptionView
 
-/// A short explanatory caption contrasting native `@Query` with AppState's `@ModelState`.
-///
-/// Extracted into its own value type so `QueryLiveListViewTests` can locate it by type.
+/// `@Query` vs `@ModelState` caption. Own type so tests can locate it.
 public struct QueryLiveCaptionView: View {
 
     // MARK: - Initialiser
@@ -160,19 +122,11 @@ public struct QueryLiveCaptionView: View {
 
 // MARK: - QueryLiveItemRowView
 
-/// A single row in the `QueryLiveListView` list, showing a `TodoItem`'s title and done state.
+/// Row showing a `TodoItem`'s done state and title.
 public struct QueryLiveItemRowView: View {
 
-    // MARK: - Properties
-
-    /// The item displayed by this row.
     public let item: TodoItem
 
-    // MARK: - Initialiser
-
-    /// Creates a `QueryLiveItemRowView`.
-    ///
-    /// - Parameter item: The `TodoItem` to display.
     public init(item: TodoItem) {
         self.item = item
     }

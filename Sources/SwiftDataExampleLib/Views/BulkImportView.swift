@@ -7,15 +7,7 @@ import SwiftUI
 
 // MARK: - BulkImportView
 
-/// A SwiftUI view that demonstrates fully non-blocking bulk SwiftData inserts via `BulkImporter`.
-///
-/// All heavy insert/save work runs inside the `@ModelActor` `BulkImporter` on a background
-/// executor. The view's main-actor state is updated only with tiny progress values — the UI
-/// stays scrollable, animatable, and cancellable at all times.
-///
-/// ### Integration
-/// Present this view directly from any host app — no additional setup is needed beyond the
-/// standard `labContainer` dependency provided by `Application+Lab.swift`.
+/// Non-blocking bulk SwiftData inserts via `BulkImporter`. The UI stays responsive throughout.
 ///
 /// ```swift
 /// BulkImportView()
@@ -24,29 +16,16 @@ public struct BulkImportView: View {
 
     // MARK: - Properties
 
-    /// Running count of items inserted by the background actor.
     @State private var progressCount: Int = 0
-
-    /// Whether an import is currently in flight.
     @State private var isRunning: Bool = false
-
-    /// Whether the last import was cancelled by the user.
     @State private var wasCancelled: Bool = false
-
-    /// The total items visible in the main-context after the import completes.
     @State private var finalCount: Int = 0
-
-    /// The `Task` wrapping the import — retained so the Cancel button can cancel it.
+    /// Retained so Cancel can call `task.cancel()`.
     @State private var importTask: Task<Void, Never>?
-
-    /// Total items to generate per import run.
     private let targetCount: Int
 
     // MARK: - Initialiser
 
-    /// Creates a `BulkImportView`.
-    ///
-    /// - Parameter targetCount: Number of `TodoItem`s to generate per import. Defaults to `10_000`.
     public init(targetCount: Int = 10_000) {
         self.targetCount = targetCount
     }
@@ -145,7 +124,6 @@ public struct BulkImportView: View {
         }
     }
 
-    /// A scrollable, animated list proving the main thread is never blocked.
     private var interactivityDemoSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("UI Responsiveness Demo")
@@ -191,12 +169,6 @@ public struct BulkImportView: View {
 
     // MARK: - Actions
 
-    /// Launches the background import inside a detached `Task`, keeping the main actor free.
-    ///
-    /// The `BulkImporter` is created with the shared `labContainer` so its background context
-    /// and the main-actor `mainContext` share the same persistent store. All inserts committed
-    /// by the actor are immediately visible through `Application.modelState(\.allItems).models`
-    /// once the task completes.
     private func startImport() {
         guard !isRunning else { return }
 
@@ -245,10 +217,7 @@ public struct BulkImportView: View {
 
 // MARK: - ResponsivenessChip
 
-/// A small animated chip used to prove the main thread is free during bulk import.
-///
-/// Each chip pulses independently, demonstrating that animations continue without stutter
-/// even while the background actor is committing thousands of SwiftData inserts.
+/// Animated chip that pulses during import, proving the main thread stays free.
 private struct ResponsivenessChip: View {
 
     // MARK: Properties

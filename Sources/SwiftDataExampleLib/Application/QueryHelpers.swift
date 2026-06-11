@@ -6,17 +6,9 @@ import SwiftData
 
 // MARK: - Public query helper functions
 
-/// Returns matching incomplete `TodoItem`s tagged with `tagName`, sorted by priority
-/// descending then title ascending, capped at `fetchLimit`.
+/// Incomplete items tagged `tagName`, sorted by priority desc then title asc, capped at `fetchLimit`.
 ///
-/// This free function builds and executes the compound query directly against the shared
-/// lab `ModelContainer`'s `mainContext`, making it callable from tests and call-sites that
-/// do not have direct access to the `Application` instance methods.
-///
-/// - Parameters:
-///   - tagName: The tag name to filter by.
-///   - fetchLimit: Maximum number of results. Defaults to `50`.
-/// - Returns: Matching `TodoItem` models.
+/// Free function so tests and non-`Application` call sites can execute the compound query directly.
 @MainActor
 public func fetchIncompleteItems(tagName: String, fetchLimit: Int = 50) -> [TodoItem] {
     let context = Application.modelContext(\.labContainer)
@@ -34,12 +26,7 @@ public func fetchIncompleteItems(tagName: String, fetchLimit: Int = 50) -> [Todo
     return (try? context.fetch(descriptor)) ?? []
 }
 
-/// Returns high-priority incomplete `TodoItem`s where `priority >= threshold`.
-///
-/// - Parameters:
-///   - threshold: Minimum priority (inclusive). Defaults to `1`.
-///   - fetchLimit: Maximum results. Defaults to `20`.
-/// - Returns: Matching `TodoItem` models.
+/// Incomplete items with `priority >= threshold`, sorted by priority desc then `createdAt` asc.
 @MainActor
 public func fetchHighPriorityIncompleteItems(threshold: Int = 1, fetchLimit: Int = 20) -> [TodoItem] {
     let context = Application.modelContext(\.labContainer)

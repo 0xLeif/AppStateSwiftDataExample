@@ -7,18 +7,9 @@ import SwiftUI
 
 // MARK: - ItemEditorView
 
-/// A self-contained screen demonstrating live editing of SwiftData `TodoItem` models.
-///
-/// Displays all `TodoItem`s sourced from `Application.modelState(\.allItems)`.
-/// Tapping a row opens `ItemEditorDetailSheet` which edits the model's properties
-/// directly and calls `save()` on the `mainContext`. Changes are immediately
-/// reflected in the list without any additional plumbing.
-///
-/// Seeds two example items on first appearance when the store is empty,
-/// so the view is usable out-of-the-box without external setup.
+/// Live `TodoItem` editor: tap a row to edit properties directly on the model.
 ///
 /// ```swift
-/// // In a host SwiftUI app (already inside a NavigationStack):
 /// ItemEditorView()
 /// ```
 public struct ItemEditorView: View {
@@ -76,7 +67,7 @@ public struct ItemEditorView: View {
 
 // MARK: - ItemEditorRowView
 
-/// A single list row showing a `TodoItem`'s title, completion badge, and priority indicator.
+/// Row: title, completion, and priority badge.
 public struct ItemEditorRowView: View {
 
     // MARK: - Properties
@@ -120,7 +111,7 @@ public struct ItemEditorRowView: View {
 
 // MARK: - ItemEditorPriorityBadge
 
-/// A capsule-shaped badge showing the numeric priority of a `TodoItem`.
+/// Capsule badge for numeric priority.
 public struct ItemEditorPriorityBadge: View {
 
     // MARK: - Properties
@@ -160,11 +151,7 @@ public struct ItemEditorPriorityBadge: View {
 
 // MARK: - ItemEditorDetailSheet
 
-/// A sheet presenting a `Form` for editing all editable fields of a `TodoItem`.
-///
-/// Mutates the model's properties directly and calls `save()` on the store after
-/// each change, so the list row reflects every edit without requiring a separate
-/// confirmation step.
+/// Form for editing all `TodoItem` fields; saves on each change.
 public struct ItemEditorDetailSheet: View {
 
     // MARK: - Properties
@@ -293,11 +280,7 @@ public struct ItemEditorDetailSheet: View {
 
 // MARK: - ItemEditorStore
 
-/// View-model for `ItemEditorView`.
-///
-/// Owns the `@ModelState` binding to `Application.allItems` and exposes
-/// the minimal mutation surface (`addItem`, `delete`, `save`, `seedIfEmpty`)
-/// used by `ItemEditorView` and `ItemEditorDetailSheet`.
+/// View-model for `ItemEditorView`: owns the `@ModelState` binding and minimal mutation surface.
 @MainActor
 public final class ItemEditorStore: ObservableObject {
 
@@ -312,28 +295,19 @@ public final class ItemEditorStore: ObservableObject {
 
     // MARK: - Public Interface
 
-    /// Creates a new untitled `TodoItem` and inserts it into the context.
     public func addItem() {
         let item = TodoItem(title: "New Item")
         $items.insert(item)
     }
 
-    /// Deletes the specified `TodoItem`.
-    ///
-    /// - Parameter item: The item to remove.
     public func delete(_ item: TodoItem) {
         $items.delete(item)
     }
 
-    /// Saves any pending context changes.
     public func save() {
         $items.save()
     }
 
-    /// Inserts two seed items when the store is empty.
-    ///
-    /// This gives the view meaningful content on first launch without requiring
-    /// the host app to pre-populate the store.
     public func seedIfEmpty() {
         guard items.isEmpty else { return }
         $items.insert(TodoItem(title: "Buy groceries", priority: 2))

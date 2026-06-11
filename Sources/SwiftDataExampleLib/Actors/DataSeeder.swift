@@ -7,28 +7,13 @@ import SwiftData
 // MARK: - SeedSize
 
 /// Predefined seeding presets for `DataSeeder`.
-///
-/// Each case exposes a human-readable `title` and the `itemCount` it will generate.
-/// The enum conforms to `CaseIterable` so `SeederView` can iterate all presets.
 public enum SeedSize: CaseIterable, Sendable {
-
-    // MARK: Cases
-
-    /// A quick sample run — useful for smoke-testing relationships.
     case sample
-
-    /// A moderate data set — exercises queries and sort descriptors at meaningful scale.
     case large
-
-    /// A stress-level data set — tests memory pressure and batch-save throughput.
     case stress
-
-    /// An extreme data set — pushes the store and UI to their limits.
     case extreme
 
-    // MARK: Properties
-
-    /// A human-readable display label including the formatted item count.
+    /// Display label with item count.
     public var title: String {
         switch self {
         case .sample:  return "Sample · 50"
@@ -38,7 +23,7 @@ public enum SeedSize: CaseIterable, Sendable {
         }
     }
 
-    /// The number of `TodoItem`s this preset will insert.
+    /// Total `TodoItem`s this preset generates.
     public var itemCount: Int {
         switch self {
         case .sample:  return 50
@@ -51,44 +36,23 @@ public enum SeedSize: CaseIterable, Sendable {
 
 // MARK: - DataSeeder
 
-/// A `@ModelActor` that seeds the shared SwiftData store with a rich, related data graph,
-/// running entirely off the main actor to keep the UI responsive.
+/// Seeds the shared store with richly-related `TodoList`, `TodoItem`, and `Tag` records,
+/// entirely off the main actor.
 ///
-/// `DataSeeder` creates realistic `TodoList`, `TodoItem`, and `Tag` records with varied
-/// properties and dense many-to-many relationships. It never touches the main-actor
-/// `mainContext` — all work happens inside the actor's own background `ModelContext`.
-///
-/// ### Usage
 /// ```swift
 /// let seeder = DataSeeder(modelContainer: Application.dependency(\.labContainer))
 /// await seeder.seed(itemCount: 1_000) { inserted in
 ///     await MainActor.run { progress = inserted }
 /// }
 /// ```
-///
-/// ### Design notes
-/// - Fetch-or-create keeps `Tag` names unique (respects `@Attribute(.unique)`).
-/// - Lists scale with `itemCount` (~1 per 200 items, minimum 5) so relationships are dense.
-/// - Items receive varied titles drawn from verb + noun pools (not "Seed Item N").
-/// - ~30 % of items are marked done, ~50 % have a due date spread across past and future.
-/// - Saves are batched (default 500) to keep memory pressure low; progress streams every
-///   `progressStride` items so a `ProgressView` updates smoothly.
 @ModelActor
 public actor DataSeeder {
 
     // MARK: - Seed
 
-    /// Inserts `itemCount` richly-related `TodoItem`s, distributed across `TodoList`s and `Tag`s,
-    /// entirely on the background context.
+    /// Inserts `itemCount` items with varied properties and related lists/tags on the background context.
     ///
-    /// Progress is streamed via `onProgress` every `progressStride` items, decoupled from the
-    /// save batch, so a progress bar advances smoothly. Pass `nil` if no tracking is needed.
-    ///
-    /// - Parameters:
-    ///   - itemCount: Total `TodoItem`s to generate. No-op if ≤ 0.
-    ///   - batchSize: Items persisted per save round-trip. Defaults to `500`.
-    ///   - progressStride: Callback frequency in items. Defaults to `25`.
-    ///   - onProgress: Optional `@Sendable` async closure called with the running inserted count.
+    /// Progress fires every `progressStride` items, decoupled from save batches.
     public func seed(
         itemCount: Int,
         batchSize: Int = 500,
@@ -154,9 +118,6 @@ public actor DataSeeder {
     // MARK: - Clear All
 
     /// Deletes every `TodoItem`, `Tag`, and `TodoList` from the background context and saves.
-    ///
-    /// Safe to call while the store is being used from other contexts — the background context
-    /// owns the delete and the shared `ModelContainer` propagates the changes.
     public func clearAll() async {
         deleteSeedModels(ofType: TodoItem.self)
         deleteSeedModels(ofType: Tag.self)
@@ -166,10 +127,7 @@ public actor DataSeeder {
 
     // MARK: - Private: Tag pool
 
-    /// Fetches existing `Tag` records or creates them if absent.
-    ///
-    /// Respects the `@Attribute(.unique)` constraint — inserting a Tag whose name already
-    /// exists triggers SwiftData's upsert behaviour, which is why we fetch-first.
+    /// Fetches existing tags or creates missing ones, respecting `@Attribute(.unique)`.
     private func fetchOrCreateTags() async -> [Tag] {
         let descriptor = FetchDescriptor<Tag>()
         let existing = (try? modelContext.fetch(descriptor)) ?? []
@@ -188,7 +146,7 @@ public actor DataSeeder {
 
     // MARK: - Private: List pool
 
-    /// Creates `count` new `TodoList`s with realistic titles, cycling through the name pool.
+    /// Creates `count` new `TodoList`s, cycling through the name pool.
     private func createLists(count: Int) -> [TodoList] {
         (0 ..< count).map { index in
             let name = SeedContent.listNames[index % SeedContent.listNames.count]
@@ -201,13 +159,7 @@ public actor DataSeeder {
 
     // MARK: - Private: Item factory
 
-    /// Builds a single `TodoItem` with realistic, varied properties.
-    ///
-    /// - `isDone`: ~30 % probability.
-    /// - `dueDate`: ~50 % probability, spread ±365 days from now.
-    /// - `priority`: random 0…5.
-    /// - Tags: 0–3 random tags from the pool.
-    /// - List: assigned to a list via round-robin distribution.
+    /// Builds one `TodoItem` with randomised `isDone` (~30%), `priority` (0–5), `dueDate` (~50%), and 0–3 tags.
     private func makeSeedItem(index: Int, lists: [TodoList], tags: [Tag]) -> TodoItem {
         let title = SeedContent.makeTitle(index: index)
         let isDone = Int.random(in: 0 ..< 10) < 3   // ~30 %
@@ -240,7 +192,6 @@ public actor DataSeeder {
 
     // MARK: - Private: Batch delete helper
 
-    /// Deletes all instances of a `PersistentModel` type from the background context.
     private func deleteSeedModels<Model: PersistentModel>(ofType type: Model.Type) {
         let all = (try? modelContext.fetch(FetchDescriptor<Model>())) ?? []
         for model in all {
@@ -263,9 +214,7 @@ public actor DataSeeder {
 
 // MARK: - SeedContent
 
-/// Static content pools used to generate realistic, varied seed data.
-///
-/// Keeping these in a separate namespace prevents them from polluting `DataSeeder`'s interface.
+/// Static content pools for seed data generation.
 private enum SeedContent {
 
     // MARK: Tag names

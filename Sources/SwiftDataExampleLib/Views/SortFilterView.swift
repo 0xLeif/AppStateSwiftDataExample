@@ -18,48 +18,22 @@ public enum SortFilterSortKey: String, CaseIterable, Identifiable, Sendable {
 
 // MARK: - SortFilterView
 
-/// Demonstrates live sorting and filtering of `TodoItem` records driven entirely by
-/// `FetchDescriptor` rebuilt on every control change.
-///
-/// Controls exposed:
-/// - Sort key picker (`Title`, `Priority`, `Created`).
-/// - Sort-order toggle (ascending / descending).
-/// - "Hide completed" toggle.
-/// - Minimum-priority stepper (0 – 5).
-///
-/// The view seeds a handful of varied items the first time it appears in an empty store
-/// so the controls visibly change the list without any manual setup.
-///
-/// Present this view inside a host `NavigationStack`; it adds `.navigationTitle` itself.
+/// Live sort/filter of `TodoItem` records — `FetchDescriptor` rebuilt on every control change.
 ///
 /// ```swift
-/// NavigationStack {
-///     SortFilterView()
-/// }
+/// NavigationStack { SortFilterView() }
 /// ```
 @MainActor
 public struct SortFilterView: View {
 
     // MARK: - Properties
 
-    /// The result of the most-recent `FetchDescriptor` execution.
     @State private var sortFilterItems: [TodoItem] = []
-
-    /// The field used as the primary sort key.
     @State private var sortFilterSortKey: SortFilterSortKey = .title
-
-    /// Whether the sort order is ascending.
     @State private var sortFilterAscending: Bool = true
-
-    /// When `true`, completed items are excluded from results.
     @State private var sortFilterHideCompleted: Bool = false
-
-    /// The minimum `priority` an item must have to appear in results (0 = show all).
     @State private var sortFilterMinPriority: Int = 0
 
-    // MARK: - Initialiser
-
-    /// Creates a `SortFilterView`.
     public init() {}
 
     // MARK: - Body
@@ -136,8 +110,6 @@ public struct SortFilterView: View {
 
     // MARK: - Private Helpers
 
-    /// Builds a `FetchDescriptor<TodoItem>` from current control state and executes it
-    /// against the shared lab container's `mainContext`.
     private func sortFilterRefetch() {
         let context = Application.modelContext(\.labContainer)
 
@@ -164,8 +136,6 @@ public struct SortFilterView: View {
         }
     }
 
-    /// Inserts a small, varied set of seed items when the store is empty so the controls
-    /// have visible data to sort and filter on first launch.
     private func sortFilterSeedIfNeeded() {
         let context = Application.modelContext(\.labContainer)
         let existing = (try? context.fetch(FetchDescriptor<TodoItem>())) ?? []
@@ -191,7 +161,7 @@ public struct SortFilterView: View {
 
 // MARK: - SortFilterRowView
 
-/// A compact row used by `SortFilterView` to display a single `TodoItem`.
+/// A compact row for a `TodoItem` in `SortFilterView`.
 public struct SortFilterRowView: View {
 
     // MARK: Properties
@@ -199,11 +169,6 @@ public struct SortFilterRowView: View {
     /// The item to display.
     public let item: TodoItem
 
-    // MARK: Initialiser
-
-    /// Creates a `SortFilterRowView`.
-    ///
-    /// - Parameter item: The `TodoItem` to render.
     public init(item: TodoItem) {
         self.item = item
     }

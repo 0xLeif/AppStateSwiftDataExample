@@ -7,17 +7,9 @@ import SwiftUI
 
 // MARK: - SwiftDataLabView
 
-/// The public root view for the SwiftData Lab example.
-///
-/// Host apps present this view directly after injecting the `labContainer` dependency (or
-/// accepting the default in-memory container). It demonstrates:
-/// - `TodoList` creation and cascade-delete.
-/// - Item insertion with priority and due-date.
-/// - Tag attachment and many-to-many display.
-/// - Filtered compound-query results.
+/// Root view for the SwiftData Lab: create lists, attach tags, filter by compound query.
 ///
 /// ```swift
-/// // In a host SwiftUI app:
 /// SwiftDataLabView()
 /// ```
 public struct SwiftDataLabView: View {
@@ -82,7 +74,7 @@ public struct SwiftDataLabView: View {
 
 // MARK: - TodoListRowView
 
-/// A compact row displaying a `TodoList`'s title and item count.
+/// Row showing a `TodoList` title and item count.
 public struct TodoListRowView: View {
 
     // MARK: Properties
@@ -110,7 +102,7 @@ public struct TodoListRowView: View {
 
 // MARK: - TodoItemListView
 
-/// Detail view showing items in a `TodoList` with add/delete/tag/filter controls.
+/// Items inside a `TodoList` with add/delete/tag/filter controls.
 public struct TodoItemListView: View {
 
     // MARK: Properties
@@ -143,7 +135,7 @@ public struct TodoItemListView: View {
         }
     }
 
-    // MARK: - Sections
+    // MARK: - Body sections
 
     private var addItemSection: some View {
         Section("Add Item") {
@@ -227,7 +219,7 @@ public struct TodoItemListView: View {
 
 // MARK: - TodoItemRowView
 
-/// A single row displaying a `TodoItem`'s completion, title, priority, and tags.
+/// Row showing completion, title, priority, and tags for a `TodoItem`.
 public struct TodoItemRowView: View {
 
     // MARK: Properties
@@ -314,7 +306,7 @@ public struct TodoItemRowView: View {
 
 // MARK: - TagEditorView
 
-/// A sheet for attaching and detaching tags on a `TodoItem`.
+/// Sheet for attaching and detaching tags on a `TodoItem`.
 public struct TagEditorView: View {
 
     // MARK: Properties

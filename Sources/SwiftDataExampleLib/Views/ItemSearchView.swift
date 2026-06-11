@@ -7,20 +7,9 @@ import SwiftUI
 
 // MARK: - ItemSearchView
 
-/// A self-contained SwiftUI screen that demonstrates live search over SwiftData.
-///
-/// As the user types in the search bar, a `#Predicate<TodoItem>` fetch runs directly against
-/// `Application.dependency(\.labContainer).mainContext`, filtering items whose titles contain
-/// the query string (locale-aware, case-insensitive via `localizedStandardContains`). An empty
-/// query shows all items. A result count header and `ContentUnavailableView` placeholders keep
-/// the experience polished when no items or no matches are found.
-///
-/// The view is self-contained: no `NavigationStack` or `NavigationSplitView` — host apps
-/// supply one. It seeds a small set of sample items when the store is empty so the screen is
-/// non-blank on first open.
+/// Live `#Predicate<TodoItem>` search using `localizedStandardContains`.
 ///
 /// ```swift
-/// // Inside a host NavigationStack:
 /// ItemSearchView()
 /// ```
 @MainActor
@@ -28,18 +17,10 @@ public struct ItemSearchView: View {
 
     // MARK: - Properties
 
-    /// The text the user has typed into the search bar.
     @State private var searchText: String = ""
-
-    /// Items that match the current `searchText` (or all items when the query is empty).
     @State private var matchedItems: [TodoItem] = []
-
-    /// `true` while the initial seed + first fetch is running.
     @State private var isLoading: Bool = true
 
-    // MARK: - Initialiser
-
-    /// Creates an `ItemSearchView`.
     public init() {}
 
     // MARK: - Body
@@ -93,10 +74,6 @@ public struct ItemSearchView: View {
 
     // MARK: - Search Logic
 
-    /// Runs a `#Predicate<TodoItem>` fetch and updates `matchedItems`.
-    ///
-    /// An empty `query` matches all items. Non-empty queries use `localizedStandardContains`
-    /// so the filter is locale-aware and case-insensitive.
     private func runSearch(query: String) {
         let context = Application.dependency(\.labContainer).mainContext
         let descriptor: FetchDescriptor<TodoItem>
@@ -120,10 +97,6 @@ public struct ItemSearchView: View {
 
     // MARK: - Seeding
 
-    /// Inserts a handful of sample `TodoItem`s when the main context holds no items at all.
-    ///
-    /// This ensures the screen is non-blank on first open without requiring the user to have
-    /// already created data in another tab.
     private func seedIfNeeded() {
         let context = Application.dependency(\.labContainer).mainContext
         let existingCount = (try? context.fetchCount(FetchDescriptor<TodoItem>())) ?? 0
@@ -150,7 +123,7 @@ public struct ItemSearchView: View {
 
 // MARK: - ItemSearchResultHeader
 
-/// A compact header that shows how many items match the current search query.
+/// Result count header for the search list.
 @MainActor
 private struct ItemSearchResultHeader: View {
 
@@ -188,15 +161,13 @@ private struct ItemSearchResultHeader: View {
 
 // MARK: - ItemSearchResultRow
 
-/// A single search result row displaying a `TodoItem`'s completion state, title, and priority.
+/// Search result row: completion state, title, and priority badge.
 @MainActor
 public struct ItemSearchResultRow: View {
 
     // MARK: Properties
 
     public let item: TodoItem
-
-    // MARK: Initialiser
 
     public init(item: TodoItem) {
         self.item = item

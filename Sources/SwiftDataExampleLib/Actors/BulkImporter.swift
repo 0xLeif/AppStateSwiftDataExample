@@ -5,22 +5,11 @@ import SwiftData
 
 // MARK: - BulkImporter
 
-/// A `@ModelActor` that runs heavy SwiftData insert/save loops **entirely off the main actor**.
+/// Inserts large batches of `TodoItem`s on a background `@ModelActor`, never touching `mainContext`.
 ///
-/// `BulkImporter` owns its own background `ModelContext` (provided by the `@ModelActor` macro).
-/// It never touches the main-actor `mainContext`, so the UI stays fully responsive — it can scroll,
-/// animate, and cancel while thousands of inserts are in flight.
-///
-/// ### Design notes
-/// - Batching (default 500 items per save) keeps memory pressure low for large counts.
-/// - `Task.yield()` between batches lets the Swift concurrency scheduler service other work.
-/// - `Task.isCancelled` is checked before every batch — callers can cancel via the `Task` handle.
-/// - Progress is delivered through a `@Sendable` callback, which the caller can forward to `@MainActor`.
-///
-/// ### Usage
 /// ```swift
 /// let importer = BulkImporter(modelContainer: Application.dependency(\.labContainer))
-/// try await importer.importItems(count: 10_000) { inserted in
+/// await importer.importItems(count: 10_000) { inserted in
 ///     await MainActor.run { progressCount = inserted }
 /// }
 /// ```
@@ -29,30 +18,10 @@ public actor BulkImporter {
 
     // MARK: - Public API
 
-    /// Generates and inserts `count` synthetic `TodoItem`s into an ephemeral `TodoList` in the
-    /// background context, saving every `batchSize` inserts.
+    /// Inserts `count` synthetic `TodoItem`s into the background context, saving every `batchSize` inserts.
     ///
-    /// The `onProgress` callback is invoked after each batch with the **running total** of
-    /// inserted items. It is called from within the `@ModelActor` executor — marshal to
-    /// `@MainActor` if you need to update UI state:
-    ///
-    /// ```swift
-    /// try await importer.importItems(count: 10_000) { inserted in
-    ///     await MainActor.run { self.progressCount = inserted }
-    /// }
-    /// ```
-    ///
-    /// Progress is **streamed**: `onProgress` fires every `progressStride` inserts (not just once per
-    /// save), so a progress bar advances smoothly instead of jumping by the save-batch size. Saves
-    /// stay batched (`batchSize`) for memory/throughput — reporting and persistence are decoupled.
-    ///
-    /// - Parameters:
-    ///   - count: Total number of `TodoItem`s to insert. Must be > 0.
-    ///   - batchSize: Number of items to insert per save round-trip. Defaults to `500`.
-    ///   - progressStride: How often, in items, to emit a progress update. Defaults to `25`.
-    ///   - listTitle: Title for the containing `TodoList`. Defaults to `"Bulk Import"`.
-    ///   - onProgress: Optional `@Sendable` async closure called with the running inserted count.
-    ///                 May be `nil` if progress tracking is not needed.
+    /// Progress (`onProgress`) fires every `progressStride` items — decoupled from saves so a progress
+    /// bar advances smoothly. Checks `Task.isCancelled` before every batch; cancel via the `Task` handle.
     public func importItems(
         count: Int,
         batchSize: Int = 500,
@@ -112,11 +81,7 @@ public actor BulkImporter {
 
     // MARK: - Private Implementation
 
-    /// Saves the background `ModelContext`, logging any failure without propagating it.
-    ///
-    /// SwiftData raises `NSException` (not a Swift error) for structural failures — those paths
-    /// are structurally uncoverable and intentionally left to crash, matching the pattern
-    /// used throughout this module's container factories.
+    /// Saves the background context, logging failures without propagating them.
     private func saveContext() {
         guard modelContext.hasChanges else { return }
         do {

@@ -7,21 +7,11 @@ import SwiftUI
 
 // MARK: - UndoRedoView
 
-/// Demonstrates SwiftData undo/redo by driving the `ModelContext`'s `undoManager` directly.
+/// Demonstrates `ModelContext` undo/redo by wiring a fresh `UndoManager()` on appear.
 ///
-/// SwiftData's `ModelContext` exposes an optional `undoManager` that, when set, records every
-/// insert/delete mutation as an undoable action. This view ensures that manager exists on appear,
-/// then lets the user add and delete `TodoItem`s and step backwards and forwards through the
-/// history using standard `UndoManager` calls.
-///
-/// ### Why assign the undoManager manually?
-/// A `ModelContext` created by a `ModelContainer` does not automatically attach an
-/// `UndoManager`; you must assign one yourself (or use `SwiftUI.Environment`'s
-/// `\.undoManager` when that is appropriate). Assigning a fresh `UndoManager()` is the
-/// simplest cross-platform approach that works in both app and test targets.
+/// A `ModelContext` doesn't auto-attach an `UndoManager` — you must assign one yourself.
 ///
 /// ```swift
-/// // In a host SwiftUI app:
 /// UndoRedoView()
 /// ```
 @MainActor
@@ -29,21 +19,11 @@ public struct UndoRedoView: View {
 
     // MARK: - Properties
 
-    /// Counter that forces a body re-evaluation after each mutation so the list stays live.
     @State private var refreshToken: Int = 0
-
-    /// Item count cached from `allItems` after each mutation; drives the live row list.
     @State private var items: [TodoItem] = []
-
-    /// Whether the undo manager currently has actions available to undo.
     @State private var canUndo: Bool = false
-
-    /// Whether the undo manager currently has actions available to redo.
     @State private var canRedo: Bool = false
 
-    // MARK: - Initialiser
-
-    /// Creates an `UndoRedoView`.
     public init() {}
 
     // MARK: - Body
@@ -63,7 +43,6 @@ public struct UndoRedoView: View {
 
     // MARK: - Sub-views
 
-    /// A brief explanatory banner describing how the ModelContext undo manager works.
     private var captionSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("ModelContext Undo Manager")
@@ -155,10 +134,6 @@ public struct UndoRedoView: View {
 
     // MARK: - Actions
 
-    /// Ensures the container's `mainContext` has a non-nil `undoManager`.
-    ///
-    /// SwiftData does not auto-assign an `UndoManager` to a freshly created context.
-    /// We assign one here if absent so that subsequent insert/delete calls are tracked.
     private func ensureUndoManagerAttached() {
         let context = Application.dependency(\.labContainer).mainContext
         if context.undoManager == nil {
@@ -167,7 +142,6 @@ public struct UndoRedoView: View {
         syncUndoState()
     }
 
-    /// Inserts a new `TodoItem` with an auto-generated title and saves the context.
     private func addItem() {
         let context = Application.dependency(\.labContainer).mainContext
         let item = TodoItem(title: "Item \(items.count + 1)")
@@ -177,7 +151,6 @@ public struct UndoRedoView: View {
         syncUndoState()
     }
 
-    /// Deletes the last item (by title sort) from the context and saves.
     private func deleteLast() {
         guard let last = items.last else { return }
         let context = Application.dependency(\.labContainer).mainContext
@@ -187,7 +160,6 @@ public struct UndoRedoView: View {
         syncUndoState()
     }
 
-    /// Calls `UndoManager.undo()` on the context's manager, then refreshes the displayed state.
     private func performUndo() {
         let context = Application.dependency(\.labContainer).mainContext
         context.undoManager?.undo()
@@ -195,7 +167,6 @@ public struct UndoRedoView: View {
         syncUndoState()
     }
 
-    /// Calls `UndoManager.redo()` on the context's manager, then refreshes the displayed state.
     private func performRedo() {
         let context = Application.dependency(\.labContainer).mainContext
         context.undoManager?.redo()
@@ -205,7 +176,6 @@ public struct UndoRedoView: View {
 
     // MARK: - Private Helpers
 
-    /// Re-fetches items from the context so the list reflects the current persisted state.
     private func refreshItems() {
         let context = Application.dependency(\.labContainer).mainContext
         let descriptor = FetchDescriptor<TodoItem>(
@@ -214,7 +184,6 @@ public struct UndoRedoView: View {
         items = (try? context.fetch(descriptor)) ?? []
     }
 
-    /// Reads `canUndo` / `canRedo` from the undo manager and updates the matching state vars.
     private func syncUndoState() {
         let manager = Application.dependency(\.labContainer).mainContext.undoManager
         canUndo = manager?.canUndo ?? false
@@ -224,17 +193,11 @@ public struct UndoRedoView: View {
 
 // MARK: - UndoRedoItemRow
 
-/// A compact row that displays a single `TodoItem`'s title and creation date.
+/// Row: title and creation time.
 public struct UndoRedoItemRow: View {
 
-    // MARK: Properties
-
-    /// The item to display.
     public let item: TodoItem
 
-    // MARK: Initialiser
-
-    /// Creates an `UndoRedoItemRow` for the given item.
     public init(item: TodoItem) {
         self.item = item
     }

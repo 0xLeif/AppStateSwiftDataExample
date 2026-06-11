@@ -7,17 +7,9 @@ import SwiftUI
 
 // MARK: - StatsView
 
-/// A self-contained dashboard view that displays aggregated statistics over all SwiftData
-/// records managed by the shared `labContainer`.
-///
-/// Demonstrates how to derive computed stats (totals, percent complete, per-priority
-/// breakdown) from `Application.modelState` without any additional store objects.
-///
-/// The view is designed to be pushed onto an existing `NavigationStack` — it does not create
-/// its own navigation container.
+/// Dashboard showing totals, completion %, and per-priority breakdown from `Application.modelState`.
 ///
 /// ```swift
-/// // In a host SwiftUI app's NavigationStack:
 /// StatsView()
 /// ```
 public struct StatsView: View {
@@ -45,7 +37,6 @@ public struct StatsView: View {
 
     // MARK: - Sections
 
-    /// Overall counts and completion progress.
     private var statsOverviewSection: some View {
         Section("Overview") {
             StatsTotalRow(label: "Total Items", value: totalItems)
@@ -76,7 +67,6 @@ public struct StatsView: View {
         .accessibilityLabel("Completion \(statsPercentText)")
     }
 
-    /// Per-priority item counts for priorities 0–5.
     private var priorityBreakdownSection: some View {
         Section("Items by Priority") {
             ForEach(StatsPriorityLevel.allCases) { level in
@@ -135,10 +125,6 @@ public struct StatsView: View {
 
     // MARK: - Actions
 
-    /// Inserts a varied set of sample `TodoItem`s, `TodoList`s, and `Tag`s.
-    ///
-    /// Designed so that the dashboard is non-empty and shows a realistic spread of
-    /// priorities and completion states immediately after seeding.
     private func seedSampleData() {
         let context = $allItems.context
 
@@ -177,7 +163,6 @@ public struct StatsView: View {
         try? context.save()
     }
 
-    /// Deletes all `TodoItem`, `TodoList`, and `Tag` records from the shared container.
     private func clearAllData() {
         let context = $allItems.context
         for item in allItems { context.delete(item) }
@@ -189,7 +174,7 @@ public struct StatsView: View {
 
 // MARK: - StatsTotalRow
 
-/// A labelled value row used in the overview section.
+/// A label + value row.
 private struct StatsTotalRow: View {
 
     // MARK: Properties
@@ -214,7 +199,7 @@ private struct StatsTotalRow: View {
 
 // MARK: - StatsPriorityLevel
 
-/// Represents one of the six valid priority levels (0–5) defined by the schema.
+/// Priority levels 0–5.
 internal enum StatsPriorityLevel: Int, CaseIterable, Identifiable {
     case none     = 0
     case low      = 1
@@ -250,7 +235,7 @@ internal enum StatsPriorityLevel: Int, CaseIterable, Identifiable {
 
 // MARK: - StatsPriorityRow
 
-/// A row displaying the item count for a single priority level, with a proportional bar.
+/// Item count for a priority level with a proportional bar.
 private struct StatsPriorityRow: View {
 
     // MARK: Properties

@@ -7,45 +7,22 @@ import SwiftUI
 
 // MARK: - SeederView
 
-/// A SwiftUI screen that drives `DataSeeder` to fill the shared store with varied, related data
-/// entirely off the main thread.
+/// Drives `DataSeeder` off the main thread; shows live counts, progress, and preset buttons.
 ///
-/// The view shows live store counts (lists / items / tags), one button per `SeedSize` preset,
-/// a live `ProgressView` during seeding, and a destructive "Clear All" control. All heavy work
-/// runs inside the `@ModelActor` `DataSeeder` — only tiny `@State` integers are updated on the
-/// main actor.
-///
-/// ### Integration
 /// ```swift
-/// NavigationStack {
-///     SeederView()
-/// }
+/// NavigationStack { SeederView() }
 /// ```
-///
-/// The view is self-contained: it attaches its own `.navigationTitle` but does not wrap itself
-/// in a `NavigationStack` or `NavigationSplitView`.
 public struct SeederView: View {
 
     // MARK: - Properties
 
-    /// Running inserted-item count streamed from the background actor.
     @State private var progressCount: Int = 0
-
-    /// Total items the active preset will generate (used to compute the progress fraction).
     @State private var targetCount: Int = 0
-
-    /// Whether a seed operation is currently in flight.
     @State private var isRunning: Bool = false
-
-    /// The `Task` wrapping the active seed run — retained so Cancel can cancel it.
+    /// Retained so Cancel can call `task.cancel()`.
     @State private var seedTask: Task<Void, Never>?
-
-    /// Whether a clear operation is currently running.
     @State private var isClearing: Bool = false
 
-    // MARK: - Init
-
-    /// Creates a `SeederView`.
     public init() {}
 
     // MARK: - Body
@@ -237,7 +214,7 @@ public struct SeederView: View {
 
 // MARK: - SeedCountChip
 
-/// A compact stat chip displaying a store-count with a label.
+/// Store-count chip with animated number transition.
 private struct SeedCountChip: View {
 
     let label: String
@@ -261,8 +238,6 @@ private struct SeedCountChip: View {
 }
 
 // MARK: - SeedPresetButton
-
-/// A single preset row button for `SeederView`.
 private struct SeedPresetButton: View {
 
     let size: SeedSize
